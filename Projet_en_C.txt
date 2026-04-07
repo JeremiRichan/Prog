@@ -1,0 +1,1483 @@
+#=======================================================================================
+#               CHAPITRE 2 (PROCESSUS)
+#=====================================================================================
+
+Exercice 2.1
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main()
+{
+    pid_t pid;
+    pid = fork();
+
+    if (pid == 0){
+        printf("Je sui le fils\n");
+    }
+    else if (pid > 0){
+        wait(NULL);
+        printf("Je suis le père\n");
+    }
+    return (0);
+}
+
+Exercice 2.2
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void)
+{
+    pid_t p1;
+    pid_t p2;
+
+    p1 = fork();
+    if (p1 == 0){
+        printf("Je suis le fils 1\n")
+        return (0);
+    }
+    p2 = fork();
+    if (p2 == 0){
+        printf("Je suis le fils 2\n");
+        return (0);
+    }
+    wait(NULL);
+    wait(NULL);
+    printf("Je suis le père\n");
+    return (0);
+}
+
+Exercice 2.3
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void)
+{
+    int i;
+    for (i = 0; i<5; i++){
+        pid_t pid = fork();
+        if (pid == 0){
+            break;
+        }
+    }
+    if(i <5){
+        printf("fils %d\n",i + 1);
+    }else{
+        for (i = 0; i < 5; i++){
+            wait(NULL);
+        }
+    }
+    return (0);
+}
+
+Exercice 2.4
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int fils_id = 0;
+
+int main()
+{
+    int i;
+    for(i =1; i<=5; i++){
+        pid_t pid = fork();
+        if (pid == 0){
+            fils_id = i;
+            break;
+        }
+    }
+    if (fils_id >0){
+        printf("Je suis le fils %d \n",fils_id);
+    }else {
+        printf("Je suis le père\n");
+        for (i=0; i<5; i++){
+            wait(NULL);
+        }
+    }
+    return (0);
+}
+
+Exercice 2.5
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <stdlib.h>
+
+int main(void)
+{
+    time_t debut;
+    time_t fin;
+    time(&debut);
+
+    srand(time(NULL));
+    pid_t p1 = fork();
+    pid_t p2 = fork();
+
+    if(p1 == 0){
+        sleep(rand() % 10 + 1);
+        _exit(0);
+    }
+    if (p2 == 0){
+        sleep(rand() % 10 + 1);
+        _exit(0);
+    }
+    wait(NULL);
+    wait(NULL);
+    time(&fin);
+    printf("La durée total %ld secondes", fin - debut);
+    return (0);
+}
+
+Exercice 2.6
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    int n;
+    int k;
+    n = atoi(argv[1]);
+    k = atoi(argv[2]);
+    char fichier[256];
+    sprintf(fichier, "/tmp/coef_%d_%d.txt", n, k);
+    if (k == 0 || k == n) {
+        FILE *f;
+        f = fopen(fichier, "w");
+        fprintf(f, "1");
+        fclose(f);
+        exit(0);
+    }
+    pid_t pid1;
+    pid_t pid2;
+    pid1 = fork();
+    if (pid1 == 0) {
+        char n1[16];
+        sprintf(n1, "%d", n - 1);
+        char k1[16];
+        sprintf(k1, "%d", k);
+        execl(argv[0], argv[0], n1, k1, NULL);
+        exit(1);
+    }
+    pid2 = fork();
+    if (pid2 == 0) {
+        char n2[16];
+        sprintf(n2, "%d", n - 1);
+        char k2[16];
+        sprintf(k2, "%d", k - 1);
+        execl(argv[0], argv[0], n2, k2, NULL);
+        exit(1);
+    }
+    waitpid(pid1, NULL, 0);
+    waitpid(pid2, NULL, 0);
+    char f1[256];
+    char f2[256];
+    sprintf(f1, "/tmp/coef_%d_%d.txt", n - 1, k);
+    sprintf(f2, "/tmp/coef_%d_%d.txt", n - 1, k - 1);
+    FILE *fp1;
+    FILE *fp2;
+    fp1 = fopen(f1, "r");
+    fp2 = fopen(f2, "r");
+    int v1;
+    int v2;
+    fscanf(fp1, "%d", &v1);
+    fscanf(fp2, "%d", &v2);
+    fclose(fp1);
+    fclose(fp2);
+    FILE *f;
+    f = fopen(fichier, "w");
+    fprintf(f, "%d", v1 + v2);
+    fclose(f);
+    return 0;
+}
+
+#=======================================================================================
+#                               CHAPITRE 3 (LANCEMENT DE PROGRAMME)
+#==========================================================================================
+
+Exercice 3.1
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main (int argc, char *argv[])
+{
+    int a, b, somme;
+    a = atoi(argv[1]);
+    b = atoi(argv[2]);
+    somme = a + b;
+
+    printf("%d\n", somme);
+    return (0);
+}
+
+Exercice 3.2
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main (int argc, char *argv[])
+{
+    char *rep_dst = argv[1];
+    execlp("cp", "cp", "-r", ".", rep_dst, NULL);
+    perror("exec");
+    return (1);
+}
+
+Exercice 3.3
+
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void)
+{
+    char fichier[256];
+
+    printf("nom du fichier : ");
+    scanf("%255s", fichier);
+    execlp("/usr/bin/emacs", "emacs", fichier, NULL);
+    perror("exec")
+    return (1);
+}
+
+Exercice 3.4
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void)
+{
+    char rep[256];
+
+    while(1){
+        printf("Repertoire (q quitter) : ");
+        if((strcmp(rep, "q") == 0) || (strcmp(rep, "Q") == 0)){
+            break;
+        }
+        char cmd[521];
+        snprintf(cmd, "cp -r . \"%s\"", rep);
+        system(cmd);
+    }
+    return (0);
+}
+
+Exercice 3.5
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(void)
+{
+    char *argv[128];
+    int count = 0;
+
+    argv[count ++] = "emacs";
+    char buff[256];
+    while (1){
+        printf("Fichier (q pour quitter) :");
+        scanf("%255s", buff);
+        if ((strcmp(buff, 'q') == 0) || (strcmp(buf, 'Q') ==0)) {
+            break;
+        }
+        arvg[count ++] = strdump(buff);
+    }
+    argv[count] == NULL;
+    execvp("emacs", argv);
+    perror("exec");
+    return (0);
+}
+
+
+#=======================================================================================
+#                                       CHAPITRE 4(COMMUNICATION ENTRE PROCESSUS)
+#============================================================================================
+
+Exercice 4.1
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void) {
+    int tube[2];
+    pipe(tube);
+    pid_t pid = fork();
+    if (pid == 0) {
+        close(tube[0]);
+        char mot[256];
+        printf("Mot: ");
+        scanf("%s", mot);
+        write(tube[1], mot, strlen(mot) + 1);
+        close(tube[1]);
+        _exit(0);
+    }
+    close(tube[1]);
+    char mot[256];
+    read(tube[0], mot, sizeof(mot));
+    FILE *f = fopen("fichier.txt", "r");
+    char buf[256];
+    int trouve = 0;
+    while (fscanf(f, "%s", buf) != EOF) {
+        if (strcmp(buf, mot) == 0) {
+            trouve = 1;
+        }
+    }
+    fclose(f);
+    printf("%d\n", trouve);
+    wait(NULL);
+    return 0;
+}
+
+Exercice 4.2
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void) {
+    int tube[2];
+    pipe(tube);
+    pid_t pid = fork();
+    if (pid == 0) {
+        dup2(tube[0], STDIN_FILENO);
+        close(tube[0]);
+        close(tube[1]);
+        char mot[256];
+        scanf("%s", mot);
+        _exit(0);
+    }
+    close(tube[0]);
+    FILE *f = fopen("fichier.txt", "r");
+    char buf[256];
+    while (fscanf(f, "%s", buf) != EOF) {
+        dprintf(tube[1], "%s ", buf);
+    }
+    fclose(f);
+    close(tube[1]);
+    wait(NULL);
+    return 0;
+}
+
+Exercice 4.3
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void) {
+    int tube[2];
+    pipe(tube);
+    pid_t pid = fork();
+    if (pid == 0) {
+        char desc[16];
+        sprintf(desc, "%d", tube[0]);
+        execl("./fils", "./fils", desc, NULL);
+        _exit(1);
+    }
+    close(tube[0]);
+    write(tube[1], "message\n", 8);
+    close(tube[1]);
+    wait(NULL);
+    return 0;
+}
+
+Exercice 4.4
+
+#include <stdio.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+    int desc = atoi(argv[1]);
+    char buf[256];
+    read(desc, buf, sizeof(buf));
+    printf("%s", buf);
+    return 0;
+}
+
+#==============================================================================================
+#               CHAPITRE 5 (THREAD POSIX)
+#==============================================================================================
+
+Exercice 5.1
+
+#include <stdio.h>
+#include <pthread.h>
+
+void *affiche(void *arg) {
+    int *t = (int *)arg;
+    int i;
+    for (i = 0; i < 5; i++) {
+        printf("%d ", t[i]);
+    }
+    printf("\n");
+    return NULL;
+}
+
+int main(void) {
+    int tab[] = {1, 2, 3, 4, 5};
+    pthread_t th;
+    pthread_create(&th, NULL, affiche, tab);
+    pthread_join(th, NULL);
+    return 0;
+}
+
+Exercice 5.2
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+
+void *gen(void *arg) {
+    int *t = malloc(10 * sizeof(int));
+    int i;
+    for (i = 0; i < 10; i++) {
+        t[i] = rand() % 100;
+    }
+    return t;
+}
+
+int main(void) {
+    srand(time(NULL));
+    pthread_t th;
+    pthread_create(&th, NULL, gen, NULL);
+    int *res;
+    pthread_join(th, (void **)&res);
+    int i;
+    for (i = 0; i < 10; i++) {
+        printf("%d ", res[i]);
+    }
+    printf("\n");
+    free(res);
+    return 0;
+}
+
+Exercice 5.3
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+
+typedef struct {
+    int *tab;
+    int n;
+    int x;
+} TypeTableau;
+
+void *init(void *arg) {
+    TypeTableau *T = (TypeTableau *)arg;
+    int i;
+    for (i = 0; i < T->n; i++) {
+        T->tab[i] = rand() % 100;
+    }
+    return NULL;
+}
+
+void *cherche(void *arg) {
+    TypeTableau *T = (TypeTableau *)arg;
+    int i;
+    int trouve = 0;
+    for (i = 0; i < T->n; i++) {
+        if (T->tab[i] == T->x) {
+            trouve = 1;
+            break;
+        }
+    }
+    int *res = malloc(sizeof(int));
+    *res = trouve;
+    return res;
+}
+
+int main(void) {
+    srand(time(NULL));
+    TypeTableau T;
+    T.n = 5;
+    T.tab = malloc(T.n * sizeof(int));
+    printf("x: ");
+    scanf("%d", &T.x);
+    pthread_t t1;
+    pthread_create(&t1, NULL, init, &T);
+    pthread_join(t1, NULL);
+    pthread_t t2;
+    pthread_create(&t2, NULL, cherche, &T);
+    int *res;
+    pthread_join(t2, (void **)&res);
+    printf("%d\n", *res);
+    free(res);
+    free(T.tab);
+    return 0;
+}
+
+Exercice 5.4
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+#include <signal.h>
+
+pthread_t t_cancel;
+void *annule(void *arg) {
+    char c;
+    while (1) {
+        c = getchar();
+        if (c == 'A') {
+            printf("Annulation\n");
+            exit(0);
+        }
+    }
+    return NULL;
+}
+
+void *gen(void *arg) {
+    int *t = (int *)arg;
+    int i;
+    for (i = 0; i < t[0]; i++) {
+        t[i+1] = rand() % 100;
+    }
+    return NULL;
+}
+
+void *inclus(void *arg) {
+    int **mat = (int **)arg;
+    int *t1 = mat[0];
+    int *t2 = mat[1];
+    int n1 = t1[0];
+    int n2 = t2[0];
+    int i;
+    int j;
+    for (i = 1; i <= n1; i++) {
+        int found = 0;
+        for (j = 1; j <= n2; j++) {
+            if (t1[i] == t2[j]) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            int *r = malloc(sizeof(int));
+            *r = 0;
+            return r;
+        }
+    }
+    int *r = malloc(sizeof(int));
+    *r = 1;
+    return r;
+}
+
+int main(void) {
+    srand(time(NULL));
+    int n1 = 3;
+    int n2 = 6;
+    int *t1 = malloc((n1 + 1) * sizeof(int));
+    int *t2 = malloc((n2 + 1) * sizeof(int));
+    t1[0] = n1;
+    t2[0] = n2;
+    pthread_t p1;
+    pthread_create(&p1, NULL, gen, t1);
+    pthread_t p2;
+    pthread_create(&p2, NULL, gen, t2);
+    pthread_t pc;
+    pthread_create(&pc, NULL, annule, NULL);
+    pthread_detach(pc);
+    pthread_join(p1, NULL);
+    pthread_join(p2, NULL);
+    int *mat[] = {t1, t2};
+    pthread_t pi;
+    pthread_create(&pi, NULL, inclus, mat);
+    int *res;
+    pthread_join(pi, (void **)&res);
+    printf("Inclus: %d\n", *res);
+    free(res);
+    free(t1);
+    free(t2);
+    return 0;
+}
+
+Exercice 5.5
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+#include <unistd.h>
+
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+int compt = 0;
+int limite;
+
+void *inc(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m);
+        compt++;
+        int fin = (compt >= limite);
+        pthread_mutex_unlock(&m);
+        if (fin) break;
+        sleep(1 + rand() % 5);
+    }
+    return NULL;
+}
+
+void *aff(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m);
+        int val = compt;
+        int fin = (compt >= limite);
+        pthread_mutex_unlock(&m);
+        if (fin) break;
+        printf("%d\n", val);
+        sleep(2);
+    }
+    return NULL;
+}
+
+int main(int argc, char *argv[]) {
+    limite = atoi(argv[1]);
+    srand(time(NULL));
+    pthread_t t1;
+    pthread_t t2;
+    pthread_create(&t1, NULL, inc, NULL);
+    pthread_create(&t2, NULL, aff, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    return 0;
+}
+
+Exercice 5.6
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+#include <unistd.h>
+
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+double tab[100];
+
+void *lisse(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m);
+        double tmp[100];
+        int i;
+        for (i = 0; i < 100; i++) {
+            tmp[i] = tab[i];
+        }
+        for (i = 1; i < 99; i++) {
+            tab[i] = (tmp[i-1] + tmp[i] + tmp[i+1]) / 3.0;
+        }
+        pthread_mutex_unlock(&m);
+        sleep(1 + rand() % 3);
+    }
+    return NULL;
+}
+
+void *affiche(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m);
+        int i;
+        for (i = 0; i < 100; i++) {
+            printf("%.2f ", tab[i]);
+        }
+        printf("\n");
+        pthread_mutex_unlock(&m);
+        sleep(4);
+    }
+    return NULL;
+}
+
+int main(void) {
+    srand(time(NULL));
+    int i;
+    for (i = 1; i < 99; i++) {
+        tab[i] = rand() % 100;
+    }
+    tab[0] = 0;
+    tab[99] = 0;
+    pthread_t t1;
+    pthread_t t2;
+    pthread_create(&t1, NULL, lisse, NULL);
+    pthread_create(&t2, NULL, affiche, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    return 0;
+}
+
+Exercice 5.7
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+#include <unistd.h>
+
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+double u = 1.0;
+int iter = 0;
+
+void *t1(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m);
+        u = 0.25 * (u - 1) * (u - 1);
+        iter++;
+        printf("T1 u=%.4f\n", u);
+        pthread_mutex_unlock(&m);
+        sleep(1 + rand() % 5);
+    }
+    return NULL;
+}
+
+void *t2(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m);
+        u = (1.0 / 6.0) * (u - 2) * (u - 2);
+        iter++;
+        printf("T2 u=%.4f\n", u);
+        pthread_mutex_unlock(&m);
+        sleep(1 + rand() % 5);
+    }
+    return NULL;
+}
+
+int main(void) {
+    srand(time(NULL));
+    pthread_t th1;
+    pthread_t th2;
+    pthread_create(&th1, NULL, t1, NULL);
+    pthread_create(&th2, NULL, t2, NULL);
+    pthread_join(th1, NULL);
+    pthread_join(th2, NULL);
+    return 0;
+}
+
+Exercice 5.8
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <time.h>
+
+sem_t s1;
+sem_t s2;
+
+void *rendez(void *arg) {
+    int i;
+    for (i = 0; i < 10; i++) {
+        sleep(2);
+        sem_wait(&s2);
+        printf("Rendez-vous %d\n", i + 1);
+        sem_post(&s1);
+    }
+    return NULL;
+}
+
+void *autre(void *arg) {
+    int i;
+    for (i = 0; i < 10; i++) {
+        sleep(4 + rand() % 6);
+        sem_post(&s2);
+        sem_wait(&s1);
+    }
+    return NULL;
+}
+
+int main(void) {
+    sem_init(&s1, 0, 0);
+    sem_init(&s2, 0, 1);
+    srand(time(NULL));
+    pthread_t t1;
+    pthread_t t2;
+    pthread_create(&t1, NULL, rendez, NULL);
+    pthread_create(&t2, NULL, autre, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    sem_destroy(&s1);
+    sem_destroy(&s2);
+    return 0;
+}
+
+
+Exercice 5.9
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <time.h>
+
+sem_t plein;
+sem_t vide;
+unsigned char buf;
+
+void *emetteur(void *arg) {
+    while (1) {
+        buf = rand() % 256;
+        sem_post(&plein);
+        sem_wait(&vide);
+        sleep(1 + rand() % 3);
+    }
+    return NULL;
+}
+
+void *recepteur(void *arg) {
+    while (1) {
+        sem_wait(&plein);
+        printf("Lu: %d\n", buf);
+        sem_post(&vide);
+        sleep(1 + rand() % 3);
+    }
+    return NULL;
+}
+
+int main(void) {
+    sem_init(&plein, 0, 0);
+    sem_init(&vide, 0, 1);
+    srand(time(NULL));
+    pthread_t e;
+    pthread_t r;
+    pthread_create(&e, NULL, emetteur, NULL);
+    pthread_create(&r, NULL, recepteur, NULL);
+    pthread_join(e, NULL);
+    pthread_join(r, NULL);
+    sem_destroy(&plein);
+    sem_destroy(&vide);
+    return 0;
+}
+
+Exercice 5.10
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <time.h>
+
+#define N 10
+sem_t mutex;
+sem_t vide;
+sem_t plein;
+int buffer[N];
+int in = 0;
+int out = 0;
+
+void *prod(void *arg) {
+    while (1) {
+        int item = rand() % 256;
+        sem_wait(&vide);
+        sem_wait(&mutex);
+        buffer[in] = item;
+        in = (in + 1) % N;
+        sem_post(&mutex);
+        sem_post(&plein);
+        sleep(1 + rand() % 3);
+    }
+    return NULL;
+}
+
+void *cons(void *arg) {
+    while (1) {
+        sem_wait(&plein);
+        sem_wait(&mutex);
+        int item = buffer[out];
+        out = (out + 1) % N;
+        printf("Consommé: %d\n", item);
+        sem_post(&mutex);
+        sem_post(&vide);
+        sleep(1 + rand() % 3);
+    }
+    return NULL;
+}
+
+int main(void) {
+    int P;
+    int M;
+    scanf("%d%d", &P, &M);
+    sem_init(&mutex, 0, 1);
+    sem_init(&vide, 0, N);
+    sem_init(&plein, 0, 0);
+    srand(time(NULL));
+    pthread_t t[P + M];
+    int i;
+    for (i = 0; i < P; i++) {
+        pthread_create(&t[i], NULL, prod, NULL);
+    }
+    for (i = 0; i < M; i++) {
+        pthread_create(&t[P + i], NULL, cons, NULL);
+    }
+    for (i = 0; i < P + M; i++) {
+        pthread_join(t[i], NULL);
+    }
+    sem_destroy(&mutex);
+    sem_destroy(&vide);
+    sem_destroy(&plein);
+    return 0;
+}
+
+Exercice 5.11
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <time.h>
+
+pthread_mutex_t m_lect = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t m_ecrit = PTHREAD_MUTEX_INITIALIZER;
+int lecteurs = 0;
+char db[15];
+
+void *lecteur(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m_lect);
+        lecteurs++;
+        if (lecteurs == 1) {
+            pthread_mutex_lock(&m_ecrit);
+        }
+        pthread_mutex_unlock(&m_lect);
+        int idx = rand() % 15;
+        printf("Lit [%d]=%d\n", idx, db[idx]);
+        sleep(1 + rand() % 3);
+        pthread_mutex_lock(&m_lect);
+        lecteurs--;
+        if (lecteurs == 0) {
+            pthread_mutex_unlock(&m_ecrit);
+        }
+        pthread_mutex_unlock(&m_lect);
+        sleep(1 + rand() % 3);
+    }
+    return NULL;
+}
+
+void *redacteur(void *arg) {
+    while (1) {
+        pthread_mutex_lock(&m_ecrit);
+        int idx = rand() % 15;
+        db[idx] = rand() % 100;
+        printf("Ecrit [%d]=%d\n", idx, db[idx]);
+        pthread_mutex_unlock(&m_ecrit);
+        sleep(1 + rand() % 10);
+    }
+    return NULL;
+}
+
+int main(void) {
+    int L;
+    int R;
+    scanf("%d%d", &L, &R);
+    srand(time(NULL));
+    pthread_t t[L + R];
+    int i;
+    for (i = 0; i < L; i++) {
+        pthread_create(&t[i], NULL, lecteur, NULL);
+    }
+    for (i = 0; i < R; i++) {
+        pthread_create(&t[L + i], NULL, redacteur, NULL);
+    }
+    for (i = 0; i < L + R; i++) {
+        pthread_join(t[i], NULL);
+    }
+    return 0;
+}
+
+
+#=================================================================================================
+#                       CHAPITRE 6 (GESTION DE DISQUE SUR DES FICHIERS)
+#===============================================================================================
+
+Exercice 6.1
+
+#include <stdio.h>
+
+int main(void) {
+    printf("a) %lld\n", 2LL * 2 * 1000 * 60 * 1024);
+    printf("b) %lld\n", ((2LL * 1000 * 60 + 350 * 60 + 45) * 1024 + 300));
+    long long o = 78000000;
+    long long sec = o / 1024;
+    printf("c) secteur %lld, cylindre %lld, face %lld\n", sec % 60, (sec / 60) % 1000, (sec / 60000) % 2);
+    return 0;
+}
+
+Exercice 6.2
+
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <string.h>
+
+int main(int argc, char **argv) {
+    int i;
+    for (i = 1; i < argc; i++) {
+        DIR *d = opendir(argv[i]);
+        if (d == NULL) continue;
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL) {
+            char p[1024];
+            snprintf(p, sizeof(p), "%s/%s", argv[i], e->d_name);
+            struct stat st;
+            if (stat(p, &st) == 0 && S_ISREG(st.st_mode) && st.st_size > 1048576) {
+                struct passwd *pw = getpwuid(st.st_uid);
+                printf("%s %s\n", p, pw ? pw->pw_name : "?");
+            }
+        }
+        closedir(d);
+    }
+    return 0;
+}
+
+Exercice 6.3
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+
+int main(void) {
+    int n;
+    scanf("%d", &n);
+    int *t = malloc(n * sizeof(int));
+    int i;
+    for (i = 0; i < n; i++) {
+        scanf("%d", &t[i]);
+    }
+    FILE *f = fopen("tab.bin", "wb");
+    fwrite(t, sizeof(int), n, f);
+    fclose(f);
+    chmod("tab.bin", 0640);
+    free(t);
+    return 0;
+}
+
+
+#============================================================================================
+#                                   CHAPITRE 7 (SIGNAUX)
+#======================================================================================
+
+
+Exercice 7.1
+
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
+
+int main(void) {
+    pid_t pid = fork();
+    if (pid == 0) {
+        while (1) { }
+    }
+    char k;
+    while (scanf(" %c", &k) == 1) {
+        if (k == 's') kill(pid, SIGSTOP);
+        else if (k == 'r') kill(pid, SIGCONT);
+        else if (k == 'q') {
+            kill(pid, SIGTERM);
+            break;
+        }
+    }
+    wait(NULL);
+    return 0;
+}
+
+Exercice 7.2
+
+#include <stdio.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+void handler(int s) {
+    FILE *f = fopen("/tmp/entier.txt", "r");
+    int v;
+    fscanf(f, "%d", &v);
+    fclose(f);
+    printf("Lu: %d\n", v);
+}
+
+int main(void) {
+    pid_t pid = fork();
+    if (pid == 0) {
+        int n;
+        printf("Entier: ");
+        scanf("%d", &n);
+        FILE *f = fopen("/tmp/entier.txt", "w");
+        fprintf(f, "%d", n);
+        fclose(f);
+        kill(getppid(), SIGUSR1);
+        _exit(0);
+    }
+    signal(SIGUSR1, handler);
+    pause();
+    wait(NULL);
+    return 0;
+}
+
+
+Exercice 7.3
+
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
+
+void handler(int s) {
+    printf("Fils %d tué\n", getpid());
+    _exit(0);
+}
+
+pid_t fils[5];
+
+int main(void) {
+    int i;
+    for (i = 0; i < 5; i++) {
+        fils[i] = fork();
+        if (fils[i] == 0) {
+            signal(SIGTERM, handler);
+            while (1) { }
+        }
+    }
+    char cmd;
+    int num;
+    while (scanf(" %c %d", &cmd, &num) == 2) {
+        if (cmd == 's') kill(fils[num], SIGSTOP);
+        else if (cmd == 'r') kill(fils[num], SIGCONT);
+        else if (cmd == 't') kill(fils[num], SIGTERM);
+    }
+    return 0;
+}
+
+Exercice 7.4
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <setjmp.h>
+
+sigjmp_buf env;
+
+void handler(int s) {
+    siglongjmp(env, 1);
+}
+
+int main(void) {
+    signal(SIGSEGV, handler);
+    int n;
+    scanf("%d", &n);
+    int *t = malloc(n * sizeof(int));
+    int i;
+    for (i = 0; i < n; i++) {
+        scanf("%d", &t[i]);
+    }
+    while (1) {
+        int idx;
+        printf("Index: ");
+        scanf("%d", &idx);
+        if (sigsetjmp(env, 1)) {
+            printf("Erreur, resaisir: ");
+            continue;
+        }
+        printf("%d\n", t[idx]);
+        break;
+    }
+    free(t);
+    return 0;
+}
+
+
+#===========================================================================================
+#                                   CHAPITRE 8 (PROGRAMMATION RESAUX)
+#=================================================================================================
+
+Exercice 8.1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <time.h>
+
+typedef struct {
+    char nom[50];
+    float prix;
+} Produit;
+
+Produit base[100];
+int n = 0;
+
+void charger_base() {
+    FILE *f = fopen("base.txt", "r");
+    while (fscanf(f, "%s %f", base[n].nom, &base[n].prix) != EOF) {
+        n++;
+    }
+    fclose(f);
+}
+
+int main(void) {
+    charger_base();
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(8888);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+    listen(sock, 5);
+    while (1) {
+        int client = accept(sock, NULL, NULL);
+        float total = 0;
+        char buf[256];
+        while (read(client, buf, sizeof(buf)) > 0) {
+            char prod[50];
+            int qty;
+            sscanf(buf, "%s %d", prod, &qty);
+            int i;
+            for (i = 0; i < n; i++) {
+                if (strcmp(base[i].nom, prod) == 0) {
+                    total += base[i].prix * qty;
+                }
+            }
+        }
+        char resp[100];
+        sprintf(resp, "Total: %.2f\n", total);
+        write(client, resp, strlen(resp));
+        time_t now = time(NULL);
+        struct tm *t = localtime(&now);
+        char filename[100];
+        strftime(filename, sizeof(filename), "cmd_%Y%m%d_%H%M%S.txt", t);
+        FILE *f = fopen(filename, "w");
+        fprintf(f, "Commande\nTotal: %.2f\n", total);
+        fclose(f);
+        close(client);
+    }
+    return 0;
+}
+
+Exercice 8.2
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int main(void) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(9999);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+    listen(sock, 5);
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    int client = accept(sock, (struct sockaddr *)&client_addr, &client_len);
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr.sin_addr, ip_str, sizeof(ip_str));
+    FILE *f = fopen("add_autoris.txt", "r");
+    int ok = 0;
+    char nom[100];
+    char line[256];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        char ip_file[50];
+        char name_file[50];
+        if (sscanf(line, "%s %s", ip_file, name_file) == 2) {
+            if (strcmp(ip_file, ip_str) == 0) {
+                strcpy(nom, name_file);
+                ok = 1;
+                break;
+            }
+        }
+    }
+    fclose(f);
+    if (ok) {
+        char msg[150];
+        sprintf(msg, "Bienvenue %s\n", nom);
+        write(client, msg, strlen(msg));
+    } else {
+        write(client, "Refusé\n", 7);
+    }
+    close(client);
+    close(sock);
+    return 0;
+}
+
+
+Exercice 8.3
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int main(int argc, char *argv[]) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(7777);
+    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+    FILE *f = fopen(argv[1], "rb");
+    char buf[1024];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
+        write(sock, buf, n);
+    }
+    fclose(f);
+    close(sock);
+    return 0;
+}
+
+
+Exercice 8.4
+
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        return 1;
+    }
+    char cmd[300];
+    sprintf(cmd, "tar czf /tmp/rep.tgz %s && nc 127.0.0.1 6666 < /tmp/rep.tgz", argv[1]);
+    system(cmd);
+    system("rm -f /tmp/rep.tgz");
+    return 0;
+}
+
+Exercice 8.5
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <pthread.h>
+
+void *relais(void *arg) {
+    int c1 = ((int*)arg)[0];
+    int c2 = ((int*)arg)[1];
+    char buf[256];
+    while (1) {
+        int n = read(c1, buf, sizeof(buf));
+        if (n <= 0) break;
+        buf[n] = '\0';
+        char msg[300];
+        sprintf(msg, "L'autre client dit: %s\n", buf);
+        write(c2, msg, strlen(msg));
+    }
+    return NULL;
+}
+
+int main(void) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(5555);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+    listen(sock, 2);
+    int c1 = accept(sock, NULL, NULL);
+    int c2 = accept(sock, NULL, NULL);
+    int fds1[2];
+    fds1[0] = c1;
+    fds1[1] = c2;
+    pthread_t t1;
+    pthread_create(&t1, NULL, relais, fds1);
+    int fds2[2];
+    fds2[0] = c2;
+    fds2[1] = c1;
+    pthread_t t2;
+    pthread_create(&t2, NULL, relais, fds2);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    close(c1);
+    close(c2);
+    close(sock);
+    return 0;
+}
+
+
+
+Exercice 8.6
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <pthread.h>
+
+pthread_mutex_t mutex_ecriture = PTHREAD_MUTEX_INITIALIZER;
+int clients[100];
+int nb_clients = 0;
+
+void *gerer_client(void *arg) {
+    int sock = *(int *)arg;
+    char buf[256];
+    int n;
+    while ((n = read(sock, buf, sizeof(buf))) > 0) {
+        buf[n] = '\0';
+        pthread_mutex_lock(&mutex_ecriture);
+        int i;
+        for (i = 0; i < nb_clients; i++) {
+            if (clients[i] != sock) {
+                write(clients[i], buf, strlen(buf));
+            }
+        }
+        pthread_mutex_unlock(&mutex_ecriture);
+    }
+    return NULL;
+}
+
+int main(void) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(4444);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+    listen(sock, 10);
+    while (1) {
+        int c = accept(sock, NULL, NULL);
+        pthread_mutex_lock(&mutex_ecriture);
+        clients[nb_clients] = c;
+        nb_clients++;
+        pthread_mutex_unlock(&mutex_ecriture);
+        pthread_t tid;
+        pthread_create(&tid, NULL, gerer_client, &clients[nb_clients - 1]);
+        pthread_detach(tid);
+    }
+    close(sock);
+    return 0;
+}
+
+#"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+#                   FIN DU CHAPITRE
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+

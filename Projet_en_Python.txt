@@ -1,0 +1,1030 @@
+#=============================================================================================
+#                           CHAPITRE 2 (PROCESSUS)
+#=============================================================================================
+
+Exercice 2.1
+
+import os
+
+pid = os.fork()
+
+if pid == 0:
+    print("Je suis le fils")
+else:
+    os.wait()
+    print("Je suis le père")
+
+Exercice 2.2
+
+import os
+
+p1 = os.fork()
+
+if p1 == 0:
+    print("Je suis le fils 1")
+    os._exit(0)
+
+p2 = os.fork()
+if p2 == 0:
+    print("Je suis le fils 2")
+    os._exit(0)
+
+os.waitpid(p1, 0)
+os.waitpid(p2, 0)
+
+print("Je suis le père")
+
+
+Exercice 2.3
+
+import os
+
+for i in range(5):
+    pid = os.fork()
+    if pid == 0:
+        print(f"fils {i +1}")
+        os._exit(0)
+for _ in range(5):
+    os.wait()
+
+
+Exercice 2.4
+
+import os
+
+for i in range(1, 6):
+    pid = os.fork()
+    if pid == 0:
+        print("Je suis le fils {i}")
+        os._exit(0)
+print("Je suis le père")
+
+for _ in range(5):
+    os.wait()
+
+Exercice 2.5
+
+import os
+import random
+import time
+
+debut = time.time()
+p1 = os.fork()
+
+if p1 == 0:
+    time.sleep(random.randint(1, 10))
+    os._exit(0)
+p2 = os.fork()
+if p2 == 0:
+    time.sleep(random.randint(1, 10))
+    os._exit(0)
+os.waitpid(p1, 0)
+os.waitpid(p2, 0)
+fin = time.time()
+
+print("La durée total : {} secondes ".format(int(fin - debut)))
+
+
+#===============================================================================================
+#                                   CHAPITRE 3 (LANCEMENT DE PROGRAMME)
+#================================================================================================
+
+Exercice 3.1
+
+import sys
+
+a = int(sys.argv[1])
+b = int(sys.argv[2])
+
+print(a + b)
+
+
+Exercice 3.2
+
+import sys
+import shutil
+
+rep_dst = sys.argv[1]
+
+shutil.copytree(".", rep_dst, dirs_exist_ok=True)
+
+Exercice 3.3
+
+import os
+
+fichier = input("Nom du fichier : ")
+
+os.execv("/usr/bin/emacs", ["emacs", fichier])
+
+Exercice 3.4
+
+import os
+import shutil
+
+while True:
+    rep = input("Repertoire (q pour quitter ) :")
+    if rep == 'q' or rep == 'Q':
+        break
+    shutil.copytree(".", rep, dirs_exist_ok=True)
+
+Exercice 3.5
+
+import os
+
+fichier = []
+while True:
+    f = input("Fichier (q pour quitter ) :")
+    if f == 'q' or f == 'Q':
+        break
+    fichier.append(f)
+
+if fichier:
+    os.execv("emacs", ["emacs"])
+
+
+Exercice 3.6
+
+import os
+import sys
+
+n = int(sys.argv[1])
+k = int(sys.argv[2])
+fichier = f"/tmp/coef_{n}_{k}.txt"
+if k == 0 or k == n:
+    with open(fichier, "w") as f:
+        f.write("1")
+    sys.exit(0)
+pid1 = os.fork()
+if pid1 == 0:
+    os.execv(sys.executable, [sys.executable, sys.argv[0], str(n - 1), str(k)])
+pid2 = os.fork()
+if pid2 == 0:
+    os.execv(sys.executable, [sys.executable, sys.argv[0], str(n - 1), str(k - 1)])
+os.waitpid(pid1, 0)
+os.waitpid(pid2, 0)
+f1 = f"/tmp/coef_{n-1}_{k}.txt"
+f2 = f"/tmp/coef_{n-1}_{k-1}.txt"
+with open(f1) as fp1:
+    v1 = int(fp1.read().strip())
+with open(f2) as fp2:
+    v2 = int(fp2.read().strip())
+with open(fichier, "w") as f:
+    f.write(str(v1 + v2))
+
+
+#========================================================================================
+#                               CHAPITRE 4 (COMMUNICATION ENTRE PROCESSUS)
+#=================================================================================================
+
+Exercice 4.1
+
+import os
+r, w = os.pipe()
+pid = os.fork()
+if pid == 0:
+    os.close(r)
+    mot = input("Mot: ")
+    os.write(w, mot.encode() + b"\0")
+    os._exit(0)
+os.close(w)
+mot = os.read(r, 256).decode().strip("\0")
+with open("fichier.txt") as f:
+    contenu = f.read().split()
+trouve = 1 if mot in contenu else 0
+print(trouve)
+os.waitpid(pid, 0)
+
+
+Exercice 4.2
+
+import os
+r, w = os.pipe()
+pid = os.fork()
+if pid == 0:
+    os.dup2(r, 0)
+    os.close(r)
+    os.close(w)
+    mot = input()
+    print("Lu:", mot)
+    os._exit(0)
+os.close(r)
+with open("fichier.txt") as f:
+    os.write(w, f.read().encode())
+os.close(w)
+os.waitpid(pid, 0)
+
+Exercice 4.3
+
+import os
+r, w = os.pipe()
+pid = os.fork()
+if pid == 0:
+    os.close(r)
+    os.execv("./fils.py", ["./fils.py", str(w)])
+os.close(w)
+os.write(r, b"message\n")
+os.close(r)
+os.waitpid(pid, 0)
+
+Exercice 4.4
+
+import os, sys
+desc = int(sys.argv[1])
+print(os.read(desc, 256).decode().strip())
+
+#==============================================================================================
+#                               CHAPITRE 5 (THREAD POSIX)
+#=============================================================================================
+
+Exercice 5.1
+
+ import threading
+
+def afficher_tableau(tab):
+    for i in range(len(tab)):
+        print(tab[i])
+
+if __name__ == "__main__":
+    tableau = [10, 20, 30, 40, 50]
+    th = threading.Thread(target=afficher_tableau, args=(tableau,))
+    th.start()
+    th.join()
+
+Exercice 5.2
+
+import threading
+import random
+
+def generer_tableau(resultat):
+    tab = [0] * 10
+    for i in range(10):
+        tab[i] = random.randint(0, 99)
+    resultat[0] = tab
+
+if __name__ == "__main__":
+    res = [None]
+    th = threading.Thread(target=generer_tableau, args=(res,))
+    th.start()
+    th.join()
+    print(res[0])
+
+Exercice 5.3
+
+import threading
+import random
+
+class TypeTableau:
+    def __init__(self, n, x):
+        self.tab = [0] * n
+        self.n = n
+        self.x = x
+
+def initialiser(obj):
+    for i in range(obj.n):
+        obj.tab[i] = random.randint(0, 99)
+
+def chercher(obj, res):
+    trouve = 0
+    for i in range(obj.n):
+        if obj.tab[i] == obj.x:
+            trouve = 1
+            break
+    res[0] = trouve
+
+if __name__ == "__main__":
+    n = 5
+    x = int(input("Entier x: "))
+    obj = TypeTableau(n, x)
+    res = [0]
+    t1 = threading.Thread(target=initialiser, args=(obj,))
+    t1.start()
+    t1.join()
+    t2 = threading.Thread(target=chercher, args=(obj, res))
+    t2.start()
+    t2.join()
+    print(res[0])
+
+Exercice 5.4
+
+import threading
+import random
+import sys
+import termios
+import tty
+
+def generer(n, tab, fini):
+    for i in range(n):
+        tab[i] = random.randint(0, 99)
+    fini.set()
+
+def verifier_inclusion(t1, t2, res, f1, f2, annule):
+    f1.wait()
+    f2.wait()
+    if annule.is_set():
+        return
+    inclus = True
+    for i in range(len(t1)):
+        trouve = False
+        for j in range(len(t2)):
+            if t1[i] == t2[j]:
+                trouve = True
+                break
+        if not trouve:
+            inclus = False
+            break
+    res[0] = inclus
+
+def ecouter_annulation(annule):
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        while True:
+            char = sys.stdin.read(1)
+            if char == "A":
+                print("Annulation")
+                annule.set()
+                sys.exit(0)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+if __name__ == "__main__":
+    n1 = 3
+    n2 = 6
+    t1 = [0] * n1
+    t2 = [0] * n2
+    f1 = threading.Event()
+    f2 = threading.Event()
+    res = [False]
+    annule = threading.Event()
+    t_g1 = threading.Thread(target=generer, args=(n1, t1, f1))
+    t_g2 = threading.Thread(target=generer, args=(n2, t2, f2))
+    t_v = threading.Thread(target=verifier_inclusion, args=(t1, t2, res, f1, f2, annule))
+    t_a = threading.Thread(target=ecouter_annulation, args=(annule,))
+    t_g1.start()
+    t_g2.start()
+    t_v.start()
+    t_a.start()
+    t_g1.join()
+    t_g2.join()
+    t_v.join()
+    if not annule.is_set():
+        print("Inclus:", res[0])
+
+Exercice 5.5
+
+import threading
+import time
+import random
+import sys
+
+mutex = threading.Lock()
+compt = 0
+limite = int(sys.argv[1])
+
+def incrementer():
+    global compt
+    while True:
+        mutex.acquire()
+        compt += 1
+        fin = compt >= limite
+        mutex.release()
+        if fin:
+            break
+        time.sleep(random.randint(1, 5))
+
+def afficher():
+    while True:
+        mutex.acquire()
+        val = compt
+        fin = compt >= limite
+        mutex.release()
+        if fin:
+            break
+        print(val)
+        time.sleep(2)
+
+if __name__ == "__main__":
+    t1 = threading.Thread(target=incrementer)
+    t2 = threading.Thread(target=afficher)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()import threading
+import time
+import random
+import sys
+
+mutex = threading.Lock()
+compt = 0
+limite = int(sys.argv[1])
+
+def incrementer():
+    global compt
+    while True:
+        mutex.acquire()
+        compt += 1
+        fin = compt >= limite
+        mutex.release()
+        if fin:
+            break
+        time.sleep(random.randint(1, 5))
+
+def afficher():
+    while True:
+        mutex.acquire()
+        val = compt
+        fin = compt >= limite
+        mutex.release()
+        if fin:
+            break
+        print(val)
+        time.sleep(2)
+
+if __name__ == "__main__":
+    t1 = threading.Thread(target=incrementer)
+    t2 = threading.Thread(target=afficher)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+Exercice 5.6
+
+import threading
+import time
+import random
+import copy
+
+mutex = threading.Lock()
+tab = [0.0] * 100
+for i in range(1, 99):
+    tab[i] = random.uniform(0, 100)
+
+def lisser():
+    global tab
+    while True:
+        mutex.acquire()
+        copie = copy.deepcopy(tab)
+        for i in range(1, 99):
+            copie[i] = (tab[i-1] + tab[i] + tab[i+1]) / 3.0
+        tab = copie
+        mutex.release()
+        time.sleep(random.randint(1, 3))
+
+def afficher():
+    while True:
+        mutex.acquire()
+        for i in range(100):
+            print(round(tab[i], 2), end=" ")
+        print()
+        mutex.release()
+        time.sleep(4)
+
+if __name__ == "__main__":
+    t1 = threading.Thread(target=lisser)
+    t2 = threading.Thread(target=afficher)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+Exercice 5.7
+
+import threading
+import time
+import random
+
+mutex = threading.Lock()
+u = 1.0
+iter_count = 0
+
+def t1():
+    global u, iter_count
+    while True:
+        mutex.acquire()
+        u = 0.25 * (u - 1.0) ** 2
+        iter_count += 1
+        val = u
+        mutex.release()
+        print("T1 u=", round(val, 4))
+        time.sleep(random.randint(1, 5))
+
+def t2():
+    global u, iter_count
+    while True:
+        mutex.acquire()
+        u = (1.0 / 6.0) * (u - 2.0) ** 2
+        iter_count += 1
+        val = u
+        mutex.release()
+        print("T2 u=", round(val, 4))
+        time.sleep(random.randint(1, 5))
+
+if __name__ == "__main__":
+    th1 = threading.Thread(target=t1)
+    th2 = threading.Thread(target=t2)
+    th1.start()
+    th2.start()
+    th1.join()
+    th2.join()
+
+Exercice 5.8
+
+import threading
+import time
+import random
+
+s1 = threading.Semaphore(0)
+s2 = threading.Semaphore(1)
+
+def rendez():
+    for i in range(10):
+        time.sleep(2)
+        s2.acquire()
+        print("Rendez-vous", i + 1)
+        s1.release()
+
+def autre():
+    for i in range(10):
+        temps = random.randint(4, 9)
+        time.sleep(temps)
+        s1.acquire()
+        s2.release()
+
+if __name__ == "__main__":
+    t1 = threading.Thread(target=rendez)
+    t2 = threading.Thread(target=autre)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+Exercice 5.9
+
+import threading
+import time
+import random
+
+plein = threading.Semaphore(0)
+vide = threading.Semaphore(1)
+buf = [0]
+
+def emetteur():
+    while True:
+        octet = random.randint(0, 255)
+        vide.acquire()
+        buf[0] = octet
+        plein.release()
+        time.sleep(random.randint(1, 3))
+
+def recepteur():
+    while True:
+        plein.acquire()
+        val = buf[0]
+        print("Lu:", val)
+        vide.release()
+        time.sleep(random.randint(1, 3))
+
+if __name__ == "__main__":
+    te = threading.Thread(target=emetteur)
+    tr = threading.Thread(target=recepteur)
+    te.start()
+    tr.start()
+    te.join()
+    tr.join()
+
+Exercice 5.10
+
+import threading
+import time
+import random
+
+TAILLE = 10
+buffer = [0] * TAILLE
+en_tete = 0
+queue = 0
+mutex = threading.Lock()
+vide = threading.Semaphore(TAILLE)
+plein = threading.Semaphore(0)
+
+def producteur():
+    global en_tete
+    while True:
+        item = random.randint(0, 255)
+        vide.acquire()
+        mutex.acquire()
+        buffer[en_tete] = item
+        en_tete = (en_tete + 1) % TAILLE
+        mutex.release()
+        plein.release()
+        time.sleep(random.randint(1, 3))
+
+def consommateur():
+    global queue
+    while True:
+        plein.acquire()
+        mutex.acquire()
+        item = buffer[queue]
+        queue = (queue + 1) % TAILLE
+        mutex.release()
+        print("Consommé:", item)
+        vide.release()
+        time.sleep(random.randint(1, 3))
+
+if __name__ == "__main__":
+    N = int(input("Nombre producteurs: "))
+    M = int(input("Nombre consommateurs: "))
+    prod_threads = []
+    cons_threads = []
+    for i in range(N):
+        t = threading.Thread(target=producteur)
+        t.start()
+        prod_threads.append(t)
+    for i in range(M):
+        t = threading.Thread(target=consommateur)
+        t.start()
+        cons_threads.append(t)
+    for t in prod_threads:
+        t.join()
+    for t in cons_threads:
+        t.join()
+
+
+Exercice 5.11
+
+import threading
+import time
+import random
+
+m_lect = threading.Lock()
+m_ecrit = threading.Lock()
+lecteurs = 0
+db = [0] * 15
+
+def lecteur():
+    global lecteurs
+    while True:
+        m_lect.acquire()
+        lecteurs += 1
+        if lecteurs == 1:
+            m_ecrit.acquire()
+        m_lect.release()
+        idx = random.randint(0, 14)
+        print("Lit [", idx, "]=", db[idx])
+        m_lect.acquire()
+        lecteurs -= 1
+        if lecteurs == 0:
+            m_ecrit.release()
+        m_lect.release()
+        time.sleep(random.randint(1, 3))
+
+def redacteur():
+    while True:
+        m_ecrit.acquire()
+        idx = random.randint(0, 14)
+        db[idx] = random.randint(0, 100)
+        print("Ecrit [", idx, "]=", db[idx])
+        m_ecrit.release()
+        time.sleep(random.randint(1, 10))
+
+if __name__ == "__main__":
+    L = int(input("Nombre lecteurs: "))
+    R = int(input("Nombre rédacteurs: "))
+    threads = []
+    for i in range(L):
+        t = threading.Thread(target=lecteur)
+        t.start()
+        threads.append(t)
+    for i in range(R):
+        t = threading.Thread(target=redacteur)
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+
+#===============================================================================================
+#                       CHAPITRE 6 (GESTION DE DISQUE SUR DES FICHIERS)
+#================================================================================================
+
+Exercice 6.1
+
+
+print(f"a) {2*2*1000*60*1024}")
+pos = (2*1000*60 + 350*60 + 45)*1024 + 300
+print(f"b) {pos}")
+o = 78000000
+sec = o // 1024
+print(f"c) secteur {sec%60}, cylindre {(sec//60)%1000}, face {(sec//60000)%2}")
+
+Exercice 6.2
+
+import os
+import sys
+import pwd
+for d in sys.argv[1:]:
+    for root, _, files in os.walk(d):
+        for f in files:
+            p = os.path.join(root, f)
+            try:
+                s = os.stat(p)
+                if s.st_size > 1048576:
+                    print(f"{p} {pwd.getpwuid(s.st_uid).pw_name}")
+            except:
+                pass
+
+Exercice 6.3
+
+import os
+import struct
+n = int(input())
+t = list(map(int, input().split()))
+with open("tab.bin", "wb") as f:
+    for val in t:
+        f.write(struct.pack("i", val))
+os.chmod("tab.bin", 0o640)
+
+
+#===============================================================================================
+#                           CHAPITRE 7 (SIGNAUX)
+#===================================================================================================
+
+Exercice 7.1
+
+import os
+import signal
+import sys
+pid = os.fork()
+if pid == 0:
+    while True:
+        pass
+while True:
+    k = sys.stdin.read(1)
+    if k == 's':
+        os.kill(pid, signal.SIGSTOP)
+    elif k == 'r':
+        os.kill(pid, signal.SIGCONT)
+    elif k == 'q':
+        os.kill(pid, signal.SIGTERM)
+        break
+os.wait()
+
+Exercice 7.2
+
+import os
+import signal
+import time
+import sys
+pid = os.fork()
+if pid == 0:
+    n = input("Entier: ")
+    with open("/tmp/entier.txt", "w") as f:
+        f.write(n)
+    os.kill(os.getppid(), signal.SIGUSR1)
+    os._exit(0)
+def handler(s, frame):
+    with open("/tmp/entier.txt") as f:
+        print(f"Lu: {f.read().strip()}")
+signal.signal(signal.SIGUSR1, handler)
+signal.pause()
+os.wait()
+
+Exercice 7.3
+
+import os
+import signal
+import sys
+def handler(s, f):
+    print(f"Fils {os.getpid()} tué")
+    os._exit(0)
+fils = []
+for i in range(5):
+    p = os.fork()
+    if p == 0:
+        signal.signal(signal.SIGTERM, handler)
+        while True:
+            pass
+    fils.append(p)
+while True:
+    line = sys.stdin.readline().split()
+    if not line:
+        break
+    cmd = line[0]
+    num = int(line[1])
+    if cmd == 's':
+        os.kill(fils[num], signal.SIGSTOP)
+    elif cmd == 'r':
+        os.kill(fils[num], signal.SIGCONT)
+    elif cmd == 't':
+        os.kill(fils[num], signal.SIGTERM)
+
+Exercice 7.4
+
+n = int(input())
+t = list(map(int, input().split()))
+while True:
+    try:
+        i = int(input("Index: "))
+        print(t[i])
+        break
+    except IndexError:
+        print("Erreur")
+
+
+#=============================================================================================
+#                           CHAPITRE 8 (PROGRAMMATION RESAUX)
+#================================================================================================
+
+Exercice 8.1
+
+import socket
+import time
+
+def charger_base():
+    base = {}
+    with open("base.txt") as f:
+        for ligne in f:
+            parts = ligne.split()
+            if len(parts) == 2:
+                base[parts[0]] = float(parts[1])
+    return base
+
+def gerer_client(conn, base):
+    total = 0
+    while True:
+        data = conn.recv(256).decode().strip()
+        if not 
+            break
+        parts = data.split()
+        if len(parts) >= 2:
+            prod = parts[0]
+            qty = int(parts[1])
+            if prod in base:
+                total += base[prod] * qty
+    reponse = "Total: {:.2f}\n".format(total)
+    conn.sendall(reponse.encode())
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    nom_fichier = "cmd_{}.txt".format(timestamp)
+    with open(nom_fichier, "w") as f:
+        f.write("Commande\n")
+        f.write("Total: {:.2f}\n".format(total))
+    conn.close()
+
+def main():
+    base = charger_base()
+    serveur = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serveur.bind(('0.0.0.0', 8888))
+    serveur.listen(5)
+    while True:
+        conn, addr = serveur.accept()
+        gerer_client(conn, base)
+
+if __name__ == "__main__":
+    main()
+
+Exercice 8.2
+
+import socket
+
+def verifier_ip(ip_client):
+    with open("add_autoris.txt") as f:
+        for ligne in f:
+            parts = ligne.split()
+            if len(parts) == 2:
+                ip_file = parts[0]
+                nom_file = parts[1]
+                if ip_file == ip_client:
+                    return True, nom_file
+    return False, ""
+
+def main():
+    serveur = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serveur.bind(('0.0.0.0', 9999))
+    serveur.listen(5)
+    conn, addr = serveur.accept()
+    ip_client = addr[0]
+    ok, nom = verifier_ip(ip_client)
+    if ok:
+        reponse = "Bienvenue {}\n".format(nom)
+    else:
+        reponse = "Refusé\n"
+    conn.sendall(reponse.encode())
+    conn.close()
+    serveur.close()
+
+if __name__ == "__main__":
+    main()
+
+
+Exercice 8.3
+
+import socket
+import sys
+
+def main():
+    chemin = sys.argv[1]
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(('127.0.0.1', 7777))
+    with open(chemin, 'rb') as f:
+        while True:
+            data = f.read(1024)
+            if not data:
+                break
+            sock.sendall(data)
+    sock.close()
+
+if __name__ == "__main__":
+    main()
+
+Exercice 8.4
+
+import os
+import sys
+import subprocess
+import socket
+
+def client():
+    rep = sys.argv[1]
+    subprocess.run(["tar", "czf", "/tmp/rep.tgz", rep])
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(('127.0.0.1', 6666))
+    with open("/tmp/rep.tgz", "rb") as f:
+        while True:
+            data = f.read(4096)
+            if not 
+                break
+            sock.sendall(data)
+    sock.close()
+    os.remove("/tmp/rep.tgz")
+
+if __name__ == "__main__":
+    client()
+
+Exercice 8.5
+
+import socket
+import threading
+
+def relais(src, dst):
+    while True:
+        data = src.recv(256)
+        if not 
+            break
+        msg = data.decode().strip()
+        reponse = "L'autre client dit: {}\n".format(msg)
+        dst.sendall(reponse.encode())
+
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('0.0.0.0', 5555))
+    sock.listen(2)
+    c1, _ = sock.accept()
+    c2, _ = sock.accept()
+    t1 = threading.Thread(target=relais, args=(c1, c2))
+    t2 = threading.Thread(target=relais, args=(c2, c1))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+    c1.close()
+    c2.close()
+    sock.close()
+
+if __name__ == "__main__":
+    main()
+
+Exercice 8.6
+
+import socket
+import threading
+
+mutex = threading.Lock()
+clients = []
+
+def gerer_client(conn):
+    while True:
+        data = conn.recv(256)
+        if not 
+            break
+        msg = data.decode()
+        with mutex:
+            for c in clients:
+                if c != conn:
+                    c.sendall(msg.encode())
+    conn.close()
+    with mutex:
+        clients.remove(conn)
+
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('0.0.0.0', 4444))
+    sock.listen(10)
+    while True:
+        conn, addr = sock.accept()
+        with mutex:
+            clients.append(conn)
+        t = threading.Thread(target=gerer_client, args=(conn,))
+        t.start()
+
+if __name__ == "__main__":
+    main()
